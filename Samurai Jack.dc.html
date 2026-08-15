@@ -12,53 +12,116 @@
 <link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;600;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="./image-slot.js"></script>
 <script>
+// dc evaluates this helmet block twice, so every binding below is guarded on a
+// window flag. Unguarded, each listener exists in duplicate — which doubles the
+// work the phone does per scroll and makes the menu toggle cancel itself.
+
 // React sets `muted` and `loop` as properties and never reflects them to
 // attributes, so the compiled hero <video> reaches the DOM unmuted and
 // non-looping — it would play once and freeze on its last frame, and Chrome
 // blocks autoplay on anything carrying an audio track. Set both properties
 // directly once dc has rendered the element.
+//
+// Decoding also stops once the hero leaves the screen. A full-screen video
+// decoding away behind three sections of scrolling costs a phone frames and
+// battery for something nobody can see.
 (() => {
-  const kick = () => {
+  if (window.__sjVideo) return;
+  window.__sjVideo = true;
+  let wired = null;
+  const attach = () => {
     const v = document.getElementById('sj-hero-video');
-    if (!v) return false;
+    if (!v || v === wired) return;
+    wired = v;
     v.defaultMuted = v.muted = true;
     v.loop = true;
+    v.playsInline = true;
     v.play?.()?.catch(() => {});
-    return true;
+    if (!window.IntersectionObserver) return;
+    new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) e.target.play?.()?.catch(() => {});
+        else e.target.pause?.();
+      }
+    }, { threshold: 0 }).observe(v);
   };
-  if (kick()) return;
-  const o = new MutationObserver(() => { if (kick()) o.disconnect(); });
-  o.observe(document.documentElement, { childList: true, subtree: true });
+  attach();
+  // dc re-renders swap the node out; re-attach to whatever replaced it.
+  new MutationObserver(attach).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 // The nav sits transparent over the hero video so nothing crops it, and takes
-// its blurred plate back once the hero has scrolled past the sticky position.
-// Both elements are looked up on every call rather than captured once: dc
-// re-renders swap the nodes out, and a detached node reports a zero rect,
-// which would read as "scrolled past" while still at the top of the page.
+// its plate back once the hero has scrolled past the sticky position.
+//
+// The crossing is detected with an IntersectionObserver whose top rootMargin
+// is the nav's own height, so the browser reports the threshold itself. The
+// obvious alternative — measuring the hero's rect in a scroll handler — forces
+// a layout on the main thread on every scroll event, mid-gesture, which is
+// precisely what a phone renders as stutter.
 (() => {
-  const sync = () => {
+  if (window.__sjNav) return;
+  window.__sjNav = true;
+
+  const stick = (on) => {
     const nav = document.getElementById('sj-nav');
-    const hero = document.getElementById('sj-hero-section');
-    if (!nav || !hero) return;
-    const rect = hero.getBoundingClientRect();
-    if (!rect.height) return; // not laid out yet — leave the class alone
-    nav.classList.toggle('is-stuck', rect.bottom <= nav.offsetHeight);
+    if (nav) nav.classList.toggle('is-stuck', on);
   };
-  addEventListener('scroll', sync, { passive: true });
-  addEventListener('resize', sync, { passive: true });
-  // childList only: toggling the class must not re-trigger this observer.
-  new MutationObserver(sync).observe(document.documentElement, { childList: true, subtree: true });
-  sync();
+
+  if (!window.IntersectionObserver) {
+    // rAF-throttled so the measurement happens once per frame at most.
+    let queued = false;
+    const sync = () => {
+      queued = false;
+      const nav = document.getElementById('sj-nav');
+      const hero = document.getElementById('sj-hero-section');
+      if (!nav || !hero) return;
+      const rect = hero.getBoundingClientRect();
+      if (!rect.height) return; // not laid out yet — leave the class alone
+      nav.classList.toggle('is-stuck', rect.bottom <= nav.offsetHeight);
+    };
+    addEventListener('scroll', () => {
+      if (!queued) { queued = true; requestAnimationFrame(sync); }
+    }, { passive: true });
+    addEventListener('resize', sync, { passive: true });
+    sync();
+    return;
+  }
+
+  let io = null;
+  let hero = null;
+  const wire = () => {
+    const nav = document.getElementById('sj-nav');
+    const el = document.getElementById('sj-hero-section');
+    if (!nav || !el) return;
+    if (io) io.disconnect();
+    hero = el;
+    io = new IntersectionObserver((entries) => {
+      stick(!entries[entries.length - 1].isIntersecting);
+      // The nav is 68px tall on desktop and 60px on mobile; the margin has to
+      // be rebuilt whenever that changes, hence the resize re-wire below.
+    }, { rootMargin: (-(nav.offsetHeight || 68)) + 'px 0px 0px 0px', threshold: 0 });
+    io.observe(hero);
+  };
+  wire();
+
+  let debounce;
+  addEventListener('resize', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(wire, 150);
+  }, { passive: true });
+
+  // Cheap: an identity check, no layout. Only a dc re-render that actually
+  // detached the hero costs us a re-wire.
+  new MutationObserver(() => {
+    if (!hero || !hero.isConnected) wire();
+  }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 // Mobile menu. The open state lives on <html> rather than on the nav so a dc
 // re-render (which swaps the nav node out) cannot drop it, and the listener is
-// delegated on document for the same reason.
-//
-// dc evaluates this helmet block twice, so the binding is guarded: two copies
-// of the listener would both see the same click and toggle the menu open then
-// straight back shut.
+// delegated on document for the same reason. The panel itself animates in CSS
+// (opacity + transform, both compositor-only) rather than being flipped
+// between display values, which cannot transition at all.
 (() => {
   const root = document.documentElement;
   if (window.__sjMenuBound) return;
@@ -83,6 +146,12 @@
    break the sticky nav. */
 body{overflow-x:clip}
 img,video{max-width:100%}
+/* Anchor jumps ease instead of teleporting, and land below the sticky nav
+   instead of underneath it. */
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+/* No 300ms wait before a tap registers, and no grey flash on the element
+   that was tapped — both read as sluggishness on a phone. */
+a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sj-burger{display:none;width:40px;height:40px;align-items:center;justify-content:center;flex:none;padding:0;background:none;border:1px solid rgba(234,227,214,.28);color:#EAE3D6;cursor:pointer}
 .sj-burger i{display:block;position:relative;width:18px;height:1.5px;background:currentColor}
 .sj-burger i::before,.sj-burger i::after{content:"";position:absolute;left:0;width:18px;height:1.5px;background:currentColor;transition:transform .25s ease}
@@ -105,14 +174,26 @@ img,video{max-width:100%}
 /* Nav collapses to a panel here: the inline link row stops fitting alongside
    the logo and the CTA. */
 @media (max-width:860px){
+  html{scroll-padding-top:68px}
   .sj-topbar{height:32px!important}
   .sj-nav{height:60px!important}
   .sj-hero{margin-top:-92px!important}
   .sj-logo{height:38px!important}
   .sj-burger{display:flex}
   .sj-nav-search{display:none!important}
-  .sj-nav-links{position:absolute;top:100%;left:0;right:0;display:none!important;flex-direction:column!important;gap:0!important;padding:6px 0;background:rgba(11,10,9,.97);backdrop-filter:blur(14px);border-bottom:1px solid rgba(234,227,214,.12)}
-  .sj-menu-open .sj-nav-links{display:flex!important}
+  /* Every backdrop-filter here is dropped for a near-opaque plate. A blur
+     behind a sticky bar is re-composited against changing content on every
+     frame of a scroll, and on a phone that is the single most expensive thing
+     on this page. At .96 alpha the difference is invisible. */
+  .sj-nav.is-stuck{background:rgba(11,10,9,.96)!important;backdrop-filter:none!important}
+  .sj-nav{transition:background .3s ease,border-bottom-color .3s ease!important}
+  .sj-hero-actions{backdrop-filter:none!important;background:rgba(11,10,9,.72)!important}
+  /* Stays in the layout and animates, rather than flipping display — opacity
+     and transform are the two properties a phone can animate without touching
+     the main thread. visibility is delayed out so the panel stays hit-testable
+     until it has finished leaving. */
+  .sj-nav-links{position:absolute;top:100%;left:0;right:0;flex-direction:column!important;gap:0!important;padding:6px 0;background:rgba(11,10,9,.97);border-bottom:1px solid rgba(234,227,214,.12);opacity:0;visibility:hidden;transform:translateY(-10px);transition:opacity .2s ease,transform .28s cubic-bezier(.2,.7,.3,1),visibility 0s linear .28s}
+  .sj-menu-open .sj-nav-links{opacity:1;visibility:visible;transform:none;transition:opacity .18s ease,transform .28s cubic-bezier(.2,.7,.3,1),visibility 0s}
   .sj-nav-links>a{padding:15px var(--sj-pad);border-top:1px solid rgba(234,227,214,.08)}
   .sj-nav-cta{height:34px!important;padding:0 16px!important}
   .sj-hero-content{left:var(--sj-pad)!important;right:var(--sj-pad)!important;width:auto!important;bottom:44px!important;gap:20px!important}
@@ -134,6 +215,17 @@ img,video{max-width:100%}
   .sj-news-card{padding:14px!important;gap:14px!important}
   .sj-footer-links{gap:28px!important}
   .sj-footer-bottom{flex-direction:column!important;gap:8px!important}
+}
+
+/* Smoothness for people who asked the OS for less of it: jump instead of
+   easing, and cut transitions to a frame rather than removing them (a 0s
+   transition never fires transitionend, which can strand a listener). */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  /* Delays are reset too, not just durations: the menu's closed state defers
+     `visibility` by .28s to outlast its own fade, and left in place that delay
+     would keep the panel unhittable long after it had "instantly" appeared. */
+  *,*::before,*::after{transition-duration:.01ms!important;transition-delay:0s!important;animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}
 }
 /* Transparent over the hero video, then it picks up the original blurred
    plate once the hero has scrolled past — otherwise page content would run
