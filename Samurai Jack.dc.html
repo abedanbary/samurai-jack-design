@@ -163,6 +163,24 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .sj-menu-open .sj-burger i{background:transparent}
 .sj-menu-open .sj-burger i::before{transform:translateY(6px) rotate(45deg)}
 .sj-menu-open .sj-burger i::after{transform:translateY(-6px) rotate(-45deg)}
+/* The five card frames, at every width — this one bites desktop Safari too.
+   The frame was shaped with aspect-ratio:1 and image-slot fills its parent
+   with height:100%. WebKit will not resolve a percentage height against a
+   height that came from aspect-ratio, so the slot's height went auto and it
+   fell back to its OWN 3/2 ratio (see the :host rule in image-slot.js) —
+   pictures rendered at the wrong shape and size. Percentage padding resolves
+   against width in every engine, and the slot is then pinned by its offsets,
+   so no percentage height is involved anywhere. */
+.sj-frame{position:relative;width:100%;height:0;padding-top:100%;aspect-ratio:auto;overflow:hidden}
+.sj-frame>image-slot{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;aspect-ratio:auto}
+/* min() inside minmax() inside repeat(auto-fit,…) is another construct engines
+   disagree on; if the min resolves to the raw 380px/320px rather than 100%, a
+   track is wider than the phone and the card leaves the screen. These two
+   queries state the single column outright at the widths where auto-fit
+   already produces one, so the result no longer depends on that resolution. */
+@media (max-width:860px){.sj-feature-grid{grid-template-columns:1fr!important}}
+@media (max-width:700px){.sj-news-grid{grid-template-columns:1fr!important}}
+
 /* svh keeps the hero exactly one screen tall once mobile browser chrome
    collapses, instead of overshooting by the toolbar height. */
 @supports (height:100svh){.sj-hero{height:100svh!important}}
@@ -325,7 +343,7 @@ a:hover{color:#C8402F}
       </div>
       <div class="sj-feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:56px">
         <div style="display:flex;flex-direction:column;gap:22px">
-          <div style="aspect-ratio:1;position:relative"><image-slot id="sj-feat-1" shape="rect" fit="cover" src="uploads/bost1.webp" placeholder="Drop combat screenshot"></image-slot></div>
+          <div class="sj-frame" style="aspect-ratio:1;position:relative"><image-slot id="sj-feat-1" shape="rect" fit="cover" src="uploads/bost1.webp" placeholder="Drop combat screenshot"></image-slot></div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <span style="font:700 10px Manrope,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#8A8378">Combat</span>
             <h3 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:600;font-size:30px;line-height:1.1">The blade decides</h3>
@@ -333,7 +351,7 @@ a:hover{color:#C8402F}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:22px">
-          <div style="aspect-ratio:1;position:relative"><image-slot id="sj-feat-2" shape="rect" fit="cover" src="uploads/bost2.webp" placeholder="Drop world screenshot"></image-slot></div>
+          <div class="sj-frame" style="aspect-ratio:1;position:relative"><image-slot id="sj-feat-2" shape="rect" fit="cover" src="uploads/bost2.webp" placeholder="Drop world screenshot"></image-slot></div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <span style="font:700 10px Manrope,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#8A8378">World</span>
             <h3 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:600;font-size:30px;line-height:1.1">A world out of time</h3>
@@ -350,10 +368,10 @@ a:hover{color:#C8402F}
         <h2 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:700;font-size:clamp(34px,4vw,54px);line-height:1">News &amp; updates</h2>
         <a href="#" style="font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8A8378;padding-bottom:6px;border-bottom:1px solid rgba(234,227,214,.25)">All news →</a>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:36px">
+      <div class="sj-news-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:36px">
 
         <a href="#" class="sj-news-card" style="display:flex;flex-direction:column;gap:18px;border:1px solid rgba(234,227,214,.12);padding:18px" style-hover="border-color:rgba(200,64,47,.7)">
-          <div style="aspect-ratio:1;position:relative"><image-slot id="sj-news-1" shape="rect" fit="cover" src="uploads/news1.webp" placeholder="Drop patch art"></image-slot></div>
+          <div class="sj-frame" style="aspect-ratio:1;position:relative"><image-slot id="sj-news-1" shape="rect" fit="cover" src="uploads/news1.webp" placeholder="Drop patch art"></image-slot></div>
           <div style="display:flex;gap:12px;font:700 10px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase"><span style="color:#C8402F">Patch</span><span style="color:#8A8378">12 Aug 2026</span></div>
           <h3 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:600;font-size:22px;line-height:1.25">Patch 1.4 — The Long Road</h3>
           <p style="margin:0;font:400 14px/1.6 Manrope,sans-serif;color:rgba(234,227,214,.6)">New northern region, reworked parry timing windows, and 40 fixes from the community bug board.</p>
@@ -361,7 +379,7 @@ a:hover{color:#C8402F}
         </a>
 
         <a href="#" class="sj-news-card" style="display:flex;flex-direction:column;gap:18px;border:1px solid rgba(234,227,214,.12);padding:18px" style-hover="border-color:rgba(200,64,47,.7)">
-          <div style="aspect-ratio:1;position:relative"><image-slot id="sj-news-2" shape="rect" fit="cover" src="uploads/news2.webp" placeholder="Drop devlog art"></image-slot></div>
+          <div class="sj-frame" style="aspect-ratio:1;position:relative"><image-slot id="sj-news-2" shape="rect" fit="cover" src="uploads/news2.webp" placeholder="Drop devlog art"></image-slot></div>
           <div style="display:flex;gap:12px;font:700 10px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase"><span style="color:#C8402F">Devlog</span><span style="color:#8A8378">04 Aug 2026</span></div>
           <h3 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:600;font-size:22px;line-height:1.25">How we animate a single cut</h3>
           <p style="margin:0;font:400 14px/1.6 Manrope,sans-serif;color:rgba(234,227,214,.6)">The combat team walks through the eleven frames that decide whether a strike lands clean.</p>
@@ -369,7 +387,7 @@ a:hover{color:#C8402F}
         </a>
 
         <a href="#" class="sj-news-card" style="display:flex;flex-direction:column;gap:18px;border:1px solid rgba(234,227,214,.12);padding:18px" style-hover="border-color:rgba(200,64,47,.7)">
-          <div style="aspect-ratio:1;position:relative"><image-slot id="sj-news-3" shape="rect" fit="cover" src="uploads/news3.webp" placeholder="Drop event art"></image-slot></div>
+          <div class="sj-frame" style="aspect-ratio:1;position:relative"><image-slot id="sj-news-3" shape="rect" fit="cover" src="uploads/news3.webp" placeholder="Drop event art"></image-slot></div>
           <div style="display:flex;gap:12px;font:700 10px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase"><span style="color:#C8402F">Event</span><span style="color:#8A8378">28 Jul 2026</span></div>
           <h3 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:600;font-size:22px;line-height:1.25">Trials of the Nine Gates begin</h3>
           <p style="margin:0;font:400 14px/1.6 Manrope,sans-serif;color:rgba(234,227,214,.6)">A three-week endurance ladder with a seasonal blade set for anyone who clears the eighth gate.</p>
