@@ -177,15 +177,28 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   html{scroll-padding-top:68px}
   .sj-topbar{height:32px!important}
   .sj-nav{height:60px!important}
-  .sj-hero{margin-top:-92px!important}
   .sj-logo{height:38px!important}
+  /* The hero video is 16:9; filling a portrait screen with it cropped ~76% of
+     the frame away. On mobile it plays as a band at its own ratio with the
+     title below, so the whole shot survives. The negative margin goes with it:
+     nothing overlaps the nav any more, so the nav sits on the page background
+     and the band starts underneath it. */
+  .sj-hero{height:auto!important;min-height:0!important;margin-top:0!important}
+  .sj-hero-media{position:relative!important;inset:auto!important;width:100%;aspect-ratio:16/9}
+  /* The three-way veil existed to hold text off the video. With the text below
+     the band, all that's left to do is fade its bottom edge into the page. */
+  .sj-hero-veil{top:0!important;bottom:auto!important;height:56.25vw!important;background:linear-gradient(180deg,rgba(11,10,9,0) 62%,rgba(11,10,9,.92) 100%)!important}
+  .sj-hero-content{position:relative!important;inset:auto!important;width:auto!important;padding:20px var(--sj-pad) 56px!important;gap:20px!important}
   .sj-burger{display:flex}
   .sj-nav-search{display:none!important}
   /* Every backdrop-filter here is dropped for a near-opaque plate. A blur
      behind a sticky bar is re-composited against changing content on every
      frame of a scroll, and on a phone that is the single most expensive thing
      on this page. At .96 alpha the difference is invisible. */
-  .sj-nav.is-stuck{background:rgba(11,10,9,.96)!important;backdrop-filter:none!important}
+  /* The nav no longer floats over the hero here, so it carries its plate from
+     the start — without it the orange band would scroll under bare cream nav
+     text on its way past. */
+  .sj-nav,.sj-nav.is-stuck{background:rgba(11,10,9,.96)!important;backdrop-filter:none!important;border-bottom-color:rgba(234,227,214,.12)!important}
   .sj-nav{transition:background .3s ease,border-bottom-color .3s ease!important}
   .sj-hero-actions{backdrop-filter:none!important;background:rgba(11,10,9,.72)!important}
   /* Stays in the layout and animates, rather than flipping display — opacity
@@ -196,10 +209,16 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .sj-menu-open .sj-nav-links{opacity:1;visibility:visible;transform:none;transition:opacity .18s ease,transform .28s cubic-bezier(.2,.7,.3,1),visibility 0s}
   .sj-nav-links>a{padding:15px var(--sj-pad);border-top:1px solid rgba(234,227,214,.08)}
   .sj-nav-cta{height:34px!important;padding:0 16px!important}
-  .sj-hero-content{left:var(--sj-pad)!important;right:var(--sj-pad)!important;width:auto!important;bottom:44px!important;gap:20px!important}
   .sj-section{padding-top:72px!important;padding-bottom:72px!important}
-  .sj-cta-section{padding-top:80px!important;padding-bottom:80px!important}
-  .sj-cta-card{padding:40px 26px!important;gap:22px!important}
+  /* The key art is 16:9. Stretched behind a phone-shaped section it was drawn
+     880px wide inside a 390px frame — 56% of the picture, the whole city and
+     the 侍 07 panel, cropped off either side. On mobile it becomes a band at
+     its own aspect ratio with the card beneath it, so the art reads the way it
+     does on desktop instead of being a narrow strip of it. */
+  .sj-cta-section{padding:0 0 72px!important;border-top:0!important}
+  .sj-cta-art{position:relative!important;inset:auto!important;width:100%;aspect-ratio:16/9}
+  .sj-cta-veil{background:linear-gradient(180deg,rgba(11,10,9,.34),rgba(11,10,9,.6))!important}
+  .sj-cta-card{margin:26px var(--sj-pad) 0!important;padding:36px 24px!important;gap:22px!important}
   .sj-feature-grid{gap:44px!important}
   .sj-footer-cols{gap:32px!important}
 }
@@ -262,8 +281,8 @@ a:hover{color:#C8402F}
   </div>
 
   <div id="sj-hero-section" class="sj-hero" style="position:relative;height:100vh;min-height:560px;margin-top:-102px;overflow:hidden">
-    <div style="position:absolute;inset:0"><video id="sj-hero-video" poster="uploads/samurifullhero.webp" autoplay muted loop playsinline preload="auto" style="width:100%;height:100%;object-fit:cover;display:block"><source src="uploads/hero2.webm" type="video/webm"><source src="uploads/hero2.min.mp4" type="video/mp4"></video></div>
-    <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(11,10,9,.78) 0%,rgba(11,10,9,.34) 9%,rgba(11,10,9,0) 20%),linear-gradient(90deg,rgba(11,10,9,.9) 0%,rgba(11,10,9,.55) 38%,rgba(11,10,9,0) 66%),linear-gradient(0deg,rgba(11,10,9,.92) 0%,rgba(11,10,9,0) 52%)"></div>
+    <div class="sj-hero-media" style="position:absolute;inset:0"><video id="sj-hero-video" poster="uploads/samurifullhero.webp" autoplay muted loop playsinline preload="auto" style="width:100%;height:100%;object-fit:cover;display:block"><source src="uploads/hero2.webm" type="video/webm"><source src="uploads/hero2.min.mp4" type="video/mp4"></video></div>
+    <div class="sj-hero-veil" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(11,10,9,.78) 0%,rgba(11,10,9,.34) 9%,rgba(11,10,9,0) 20%),linear-gradient(90deg,rgba(11,10,9,.9) 0%,rgba(11,10,9,.55) 38%,rgba(11,10,9,0) 66%),linear-gradient(0deg,rgba(11,10,9,.92) 0%,rgba(11,10,9,0) 52%)"></div>
 
     <div class="sj-hero-content" style="position:absolute;left:40px;bottom:56px;width:min(600px,60vw);display:flex;flex-direction:column;gap:26px">
       <div style="display:flex;align-items:center;gap:14px;font:700 10px Manrope,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#C8402F">
@@ -341,8 +360,8 @@ a:hover{color:#C8402F}
   </div>
 
   <div id="play" class="sj-cta-section" style="position:relative;padding:130px var(--sj-pad);overflow:hidden;border-top:1px solid rgba(234,227,214,.1)">
-    <div style="position:absolute;inset:0"><image-slot id="sj-cta" shape="rect" fit="cover" src="uploads/samurifullhero.webp" placeholder="Drop full-width key art"></image-slot></div>
-    <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(11,10,9,.88),rgba(11,10,9,.72))"></div>
+    <div class="sj-cta-art" style="position:absolute;inset:0"><image-slot id="sj-cta" shape="rect" fit="cover" src="uploads/samurifullhero.webp" placeholder="Drop full-width key art"></image-slot></div>
+    <div class="sj-cta-veil" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(11,10,9,.88),rgba(11,10,9,.72))"></div>
     <div class="sj-cta-card" style="position:relative;max-width:820px;margin:0 auto;padding:52px 48px;background:rgba(11,10,9,.9);border:1px solid rgba(234,227,214,.14);display:flex;flex-direction:column;align-items:center;gap:28px;text-align:center">
       <h2 style="margin:0;font-family:'Zen Old Mincho',serif;font-weight:700;font-size:clamp(32px,5.5vw,72px);line-height:1;text-wrap:balance">Take up the blade</h2>
       <p style="margin:0;max-width:520px;font:400 16px/1.6 Manrope,sans-serif;color:rgba(234,227,214,.7)">Available now on PC, PlayStation 5, and Xbox Series X|S.</p>
