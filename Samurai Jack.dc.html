@@ -193,7 +193,7 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
      nothing overlaps the nav any more, so the nav sits on the page background
      and the band starts underneath it. */
   .sj-hero{height:auto!important;min-height:0!important;margin-top:0!important}
-  .sj-hero-media{position:relative!important;inset:auto!important;width:100%;aspect-ratio:16/9}
+  .sj-hero-media{position:relative!important;inset:auto!important;width:100%!important}
   /* The three-way veil existed to hold text off the video. With the text below
      the band, all that's left to do is fade its bottom edge into the page. */
   .sj-hero-veil{top:0!important;bottom:auto!important;height:56.25vw!important;background:linear-gradient(180deg,rgba(11,10,9,0) 62%,rgba(11,10,9,.92) 100%)!important}
@@ -225,7 +225,16 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
      its own aspect ratio with the card beneath it, so the art reads the way it
      does on desktop instead of being a narrow strip of it. */
   .sj-cta-section{padding:0 0 72px!important;border-top:0!important}
-  .sj-cta-art{position:relative!important;inset:auto!important;width:100%;aspect-ratio:16/9}
+  .sj-cta-art{position:relative!important;inset:auto!important;width:100%!important}
+  /* Both media bands hold their 16:9 shape with percentage padding, which every
+     engine resolves against WIDTH, and the media inside is sized by its offsets.
+     aspect-ratio + height:100% looked equivalent and worked in Chrome, but
+     WebKit will not resolve a percentage height against a height that came from
+     aspect-ratio: the video fell back to its intrinsic 1080px and burst out of
+     the band. That is why this only ever broke in Safari. overflow:hidden is
+     the backstop — nothing can leave these frames now regardless. */
+  .sj-hero-media,.sj-cta-art{height:0!important;padding-top:56.25%!important;aspect-ratio:auto!important;overflow:hidden}
+  .sj-hero-media>video,.sj-cta-art>image-slot{position:absolute!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important}
   .sj-cta-veil{background:linear-gradient(180deg,rgba(11,10,9,.34),rgba(11,10,9,.6))!important}
   .sj-cta-card{margin:26px var(--sj-pad) 0!important;padding:36px 24px!important;gap:22px!important}
   .sj-feature-grid{gap:44px!important}
@@ -262,7 +271,7 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 /* -webkit- prefix so Safari keeps the blur — it only supports the unprefixed
    property from version 18, and without this the plate renders flat there. */
 .sj-nav.is-stuck{background:rgba(11,10,9,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom-color:rgba(234,227,214,.12)}
-.sj-hero-actions{-webkit-backdrop-filter:blur(6px)}
+.sj-hero-actions{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 body{margin:0;background:#0b0a09;color:#EAE3D6;font-family:Manrope,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:#EAE3D6;text-decoration:none}
 a:hover{color:#C8402F}
