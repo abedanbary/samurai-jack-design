@@ -149,6 +149,9 @@ img,video{max-width:100%}
 /* Anchor jumps ease instead of teleporting, and land below the sticky nav
    instead of underneath it. */
 html{scroll-behavior:smooth;scroll-padding-top:76px}
+/* iOS inflates font sizes on rotation unless told not to, which pushes text
+   past the boxes it was measured into. Desktop is unaffected. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* No 300ms wait before a tap registers, and no grey flash on the element
    that was tapped — both read as sluggishness on a phone. */
 a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -177,7 +180,13 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   html{scroll-padding-top:68px}
   .sj-topbar{height:32px!important}
   .sj-nav{height:60px!important}
-  .sj-logo{height:38px!important}
+  /* The logo was a fixed height with flex:none, so at 320px it computed to
+     114px inside a 106px group and escaped it, 12px from the Play button.
+     Capping the height instead of setting it, and letting the wrapper shrink,
+     scales it down by its own aspect ratio only on screens too narrow for it —
+     38px everywhere there is room. */
+  .sj-brand{flex:0 1 auto!important;min-width:0}
+  .sj-logo{height:auto!important;max-height:38px;max-width:100%}
   /* The hero video is 16:9; filling a portrait screen with it cropped ~76% of
      the frame away. On mobile it plays as a band at its own ratio with the
      title below, so the whole shot survives. The negative margin goes with it:
@@ -198,9 +207,9 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   /* The nav no longer floats over the hero here, so it carries its plate from
      the start — without it the orange band would scroll under bare cream nav
      text on its way past. */
-  .sj-nav,.sj-nav.is-stuck{background:rgba(11,10,9,.96)!important;backdrop-filter:none!important;border-bottom-color:rgba(234,227,214,.12)!important}
+  .sj-nav,.sj-nav.is-stuck{background:rgba(11,10,9,.96)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-bottom-color:rgba(234,227,214,.12)!important}
   .sj-nav{transition:background .3s ease,border-bottom-color .3s ease!important}
-  .sj-hero-actions{backdrop-filter:none!important;background:rgba(11,10,9,.72)!important}
+  .sj-hero-actions{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(11,10,9,.72)!important}
   /* Stays in the layout and animates, rather than flipping display — opacity
      and transform are the two properties a phone can animate without touching
      the main thread. visibility is delayed out so the panel stays hit-testable
@@ -250,7 +259,10 @@ a,button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
    plate once the hero has scrolled past — otherwise page content would run
    under bare nav text. */
 .sj-nav{border-bottom:1px solid transparent;transition:background .3s ease,backdrop-filter .3s ease,border-bottom-color .3s ease}
-.sj-nav.is-stuck{background:rgba(11,10,9,.86);backdrop-filter:blur(14px);border-bottom-color:rgba(234,227,214,.12)}
+/* -webkit- prefix so Safari keeps the blur — it only supports the unprefixed
+   property from version 18, and without this the plate renders flat there. */
+.sj-nav.is-stuck{background:rgba(11,10,9,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom-color:rgba(234,227,214,.12)}
+.sj-hero-actions{-webkit-backdrop-filter:blur(6px)}
 body{margin:0;background:#0b0a09;color:#EAE3D6;font-family:Manrope,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:#EAE3D6;text-decoration:none}
 a:hover{color:#C8402F}
@@ -265,7 +277,7 @@ a:hover{color:#C8402F}
 
   <div id="sj-nav" class="sj-nav" style="position:sticky;top:0;z-index:30;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--sj-pad)">
     <div style="display:flex;align-items:center;gap:44px;min-width:0">
-      <div style="display:flex;align-items:center;flex:none">
+      <div class="sj-brand" style="display:flex;align-items:center;flex:none">
         <img src="uploads/logo.webp" alt="Samurai Jack" class="sj-logo" style="height:56px;width:auto;display:block">
       </div>
       <div class="sj-nav-links" style="display:flex;gap:28px;white-space:nowrap;font:600 11px Manrope,sans-serif;letter-spacing:.15em;text-transform:uppercase">
